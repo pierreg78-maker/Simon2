@@ -676,7 +676,8 @@
     await delay(1080);
     milestoneEl.classList.remove('show');
     milestonePlaying = false;
-    if (expectedRunId === runId && gameActive) acceptingInput = true;
+    // La remise en service des touches est gérée par handleTileClick :
+    // elle dépend du fait que le palier tombe au milieu ou à la fin de la manche.
   }
 
   async function animateEndTiles(expectedRunId) {
@@ -796,6 +797,11 @@
     if (score > 0 && score % 10 === 0) {
       await showMilestone(score, currentRunId);
       if (currentRunId !== runId) return;
+
+      // Si le palier arrive au milieu d'une séquence (par exemple 20 en mode
+      // 6 touches), il faut réellement réactiver les boutons, pas seulement
+      // la variable acceptingInput.
+      if (playerIndex < sequence.length) disableTiles(false);
     }
 
     if (playerIndex === sequence.length) {
