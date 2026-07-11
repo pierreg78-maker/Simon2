@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Simon 2.0a</title>
+<title>Simon 2.0b</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,6 +110,16 @@
   }
 
   .mode-box { text-align: right; }
+
+  .records {
+    margin-top: 5px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    line-height: 1.2;
+    letter-spacing: .015em;
+    white-space: nowrap;
+  }
 
   #mode-readout {
     font-family: 'DM Mono', monospace;
@@ -258,6 +268,111 @@
   #btn-start:hover { opacity: .9; }
   #btn-start:active { transform: scale(.97); }
 
+  .milestone {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    background: rgba(16,16,22,.18);
+  }
+
+  .milestone.show {
+    visibility: visible;
+    animation: milestoneFade 1.05s ease both;
+  }
+
+  .milestone-card {
+    padding: 16px 24px;
+    border: 2px solid var(--border);
+    border-radius: 18px;
+    background: rgba(31,31,40,.96);
+    box-shadow: 0 12px 36px rgba(0,0,0,.42), 0 0 28px rgba(232,185,35,.2);
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(22px, 7vw, 34px);
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .end-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(12,12,17,.76);
+    backdrop-filter: blur(5px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .22s ease, visibility .22s ease;
+  }
+
+  .end-screen.show { opacity: 1; visibility: visible; }
+
+  .end-card {
+    width: min(360px, 94vw);
+    padding: 24px 20px 20px;
+    border: 2px solid var(--border);
+    border-radius: 22px;
+    background: var(--surface-2);
+    text-align: center;
+    box-shadow: 0 18px 52px rgba(0,0,0,.55);
+    transform: scale(.94);
+    transition: transform .22s ease;
+  }
+
+  .end-screen.show .end-card { transform: scale(1); }
+
+  .end-stars {
+    color: var(--border);
+    font-size: clamp(21px, 7vw, 29px);
+    letter-spacing: .04em;
+    white-space: nowrap;
+    text-shadow: 0 0 15px rgba(232,185,35,.4);
+  }
+
+  .end-medal {
+    min-height: 42px;
+    margin: 10px 0 2px;
+    font-size: 34px;
+  }
+
+  .end-score {
+    margin-top: 7px;
+    font-family: 'DM Mono', monospace;
+    font-size: 25px;
+  }
+
+  .end-message {
+    min-height: 24px;
+    margin: 10px 0 16px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .end-record { color: var(--border); }
+
+  #btn-replay {
+    border: 0;
+    border-radius: 999px;
+    background: var(--text);
+    color: var(--bg);
+    padding: 12px 34px;
+    font: 700 14px 'Inter', sans-serif;
+    cursor: pointer;
+  }
+
+  @keyframes milestoneFade {
+    0% { opacity: 0; transform: scale(.78); }
+    18%, 72% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.08); }
+  }
+
   @media (max-width: 430px) {
     body { gap: 11px; padding-inline: 10px; }
     .banner { padding-block: 12px; }
@@ -275,6 +390,7 @@
     .banner h1 { font-size: 30px; }
     .back-link { width: 48px; height: 48px; font-size: 8.5px; }
     .score-panel { min-height: 42px; }
+    .records { font-size: 9px; margin-top: 3px; }
     #score { font-size: 29px; }
     .mode-selector { padding: 6px; }
     .mode-btn { padding-block: 7px; }
@@ -299,6 +415,7 @@
   <div>
     <span class="score-label">Score</span>
     <span id="score">0</span>
+    <div class="records" id="records">R : 4T 0 · 6T 0 · 8T 0</div>
   </div>
   <div class="mode-box">
     <div class="mode-label">Mode</div>
@@ -317,6 +434,20 @@
 <div class="controls">
   <div id="status" aria-live="polite">Prêt à jouer</div>
   <button id="btn-start" type="button">Commencer</button>
+</div>
+
+<div class="milestone" id="milestone" aria-live="assertive">
+  <div class="milestone-card" id="milestone-text">🎉 Niveau 10 !</div>
+</div>
+
+<div class="end-screen" id="end-screen" role="dialog" aria-modal="true" aria-labelledby="end-message">
+  <div class="end-card">
+    <div class="end-stars">★★★★★★★★</div>
+    <div class="end-medal" id="end-medal"></div>
+    <div class="end-score" id="end-score">Score : 0</div>
+    <div class="end-message" id="end-message"></div>
+    <button id="btn-replay" type="button">Rejouer</button>
+  </div>
 </div>
 
 <script>
@@ -338,6 +469,14 @@
   const scoreEl = document.getElementById('score');
   const statusEl = document.getElementById('status');
   const btnStart = document.getElementById('btn-start');
+  const recordsEl = document.getElementById('records');
+  const milestoneEl = document.getElementById('milestone');
+  const milestoneTextEl = document.getElementById('milestone-text');
+  const endScreenEl = document.getElementById('end-screen');
+  const endMedalEl = document.getElementById('end-medal');
+  const endScoreEl = document.getElementById('end-score');
+  const endMessageEl = document.getElementById('end-message');
+  const btnReplay = document.getElementById('btn-replay');
   const modeReadout = document.getElementById('mode-readout');
   const modeButtons = Array.from(document.querySelectorAll('.mode-btn'));
 
@@ -352,9 +491,41 @@
   let acceptingInput = false;
   let gameActive = false;
   let runId = 0;
+  let milestonePlaying = false;
+  let records = loadRecords();
 
   function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function loadRecords() {
+    const defaults = { 4: 0, 6: 0, 8: 0 };
+    try {
+      const saved = JSON.parse(localStorage.getItem('simon-records-2') || '{}');
+      return {
+        4: Number(saved[4]) || 0,
+        6: Number(saved[6]) || 0,
+        8: Number(saved[8]) || 0
+      };
+    } catch (_) {
+      return defaults;
+    }
+  }
+
+  function saveRecords() {
+    try { localStorage.setItem('simon-records-2', JSON.stringify(records)); } catch (_) {}
+  }
+
+  function updateRecordsDisplay() {
+    recordsEl.textContent = `R : 4T ${records[4]} · 6T ${records[6]} · 8T ${records[8]}`;
+  }
+
+  function medalForScore(value) {
+    if (value >= 50) return '👑';
+    if (value >= 30) return '🥇';
+    if (value >= 20) return '🥈';
+    if (value >= 10) return '🥉';
+    return '';
   }
 
   async function ensureAudio() {
@@ -383,6 +554,26 @@
     gain.connect(audioCtx.destination);
     oscillator.start(start);
     oscillator.stop(end + 0.03);
+  }
+
+  function playVictory() {
+    if (!audioCtx) return;
+    const notes = [523.25, 659.25, 783.99];
+    const start = audioCtx.currentTime;
+    notes.forEach((frequency, index) => {
+      const oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const noteStart = start + index * 0.11;
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(frequency, noteStart);
+      gain.gain.setValueAtTime(0.0001, noteStart);
+      gain.gain.exponentialRampToValueAtTime(0.14, noteStart + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 0.22);
+      oscillator.connect(gain);
+      gain.connect(audioCtx.destination);
+      oscillator.start(noteStart);
+      oscillator.stop(noteStart + 0.24);
+    });
   }
 
   function playFail() {
@@ -463,6 +654,45 @@
     return Math.max(230, 500 - sequence.length * 15);
   }
 
+  async function showMilestone(value, expectedRunId) {
+    if (value === 0 || value % 10 !== 0 || milestonePlaying) return;
+    milestonePlaying = true;
+    disableTiles(true);
+    milestoneTextEl.textContent = value >= 20 ? `🔥 Niveau ${value} !` : `🎉 Niveau ${value} !`;
+    milestoneEl.classList.remove('show');
+    void milestoneEl.offsetWidth;
+    milestoneEl.classList.add('show');
+    playVictory();
+    await delay(1080);
+    milestoneEl.classList.remove('show');
+    milestonePlaying = false;
+    if (expectedRunId === runId && gameActive) acceptingInput = true;
+  }
+
+  async function animateEndTiles(expectedRunId) {
+    disableTiles(true);
+    for (let index = 0; index < tiles.length; index++) {
+      if (expectedRunId !== runId) return;
+      tiles[index].classList.add('lit');
+      await delay(70);
+    }
+    await delay(220);
+    tiles.forEach(tile => tile.classList.remove('lit'));
+  }
+
+  function showEndScreen(isNewRecord) {
+    endMedalEl.textContent = medalForScore(score);
+    endScoreEl.textContent = `Score : ${score}`;
+    endMessageEl.textContent = isNewRecord ? 'Nouveau record !' : `Record : ${records[tileCount]}`;
+    endMessageEl.classList.toggle('end-record', isNewRecord);
+    endScreenEl.classList.add('show');
+    btnReplay.focus();
+  }
+
+  function hideEndScreen() {
+    endScreenEl.classList.remove('show');
+  }
+
   async function playSequence(expectedRunId) {
     disableTiles(true);
     setStatus('Observez…');
@@ -499,6 +729,7 @@
     playerIndex = 0;
     setScore(0);
     setStatus('Préparez-vous…');
+    hideEndScreen();
     btnStart.style.display = 'none';
     setModeButtonsDisabled(true);
     disableTiles(true);
@@ -512,22 +743,26 @@
     disableTiles(true);
     playFail();
     setStatus('Raté !', true);
-    await delay(650);
+    await delay(520);
 
     if (expectedRunId !== runId) return;
-
-    tiles.forEach(tile => tile.classList.add('lit'));
-    await delay(260);
-    tiles.forEach(tile => tile.classList.remove('lit'));
-    await delay(250);
-
+    await animateEndTiles(expectedRunId);
     if (expectedRunId !== runId) return;
+
+    const isNewRecord = score > records[tileCount];
+    if (isNewRecord) {
+      records[tileCount] = score;
+      saveRecords();
+      updateRecordsDisplay();
+      playVictory();
+    }
 
     gameActive = false;
-    setStatus(`Séquence de ${sequence.length} — recommencez ?`);
+    setStatus('Partie terminée');
     btnStart.textContent = 'Rejouer';
-    btnStart.style.display = '';
+    btnStart.style.display = 'none';
     setModeButtonsDisabled(false);
+    showEndScreen(isNewRecord);
   }
 
   async function handleTileClick(index) {
@@ -548,6 +783,11 @@
     playerIndex += 1;
     setScore(score + 1);
 
+    if (score > 0 && score % 10 === 0) {
+      await showMilestone(score, currentRunId);
+      if (currentRunId !== runId) return;
+    }
+
     if (playerIndex === sequence.length) {
       setStatus('Bien joué !');
       await delay(520);
@@ -566,6 +806,7 @@
     playerIndex = 0;
     setScore(0);
     setStatus('Prêt à jouer');
+    hideEndScreen();
     btnStart.textContent = 'Commencer';
     btnStart.style.display = '';
     modeReadout.textContent = `${count} touches`;
@@ -582,7 +823,9 @@
   });
 
   btnStart.addEventListener('click', startGame);
+  btnReplay.addEventListener('click', startGame);
 
+  updateRecordsDisplay();
   createTiles();
 })();
 </script>
