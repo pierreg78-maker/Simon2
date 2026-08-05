@@ -269,110 +269,6 @@
   #btn-start:hover { opacity: .9; }
   #btn-start:active { transform: scale(.97); }
 
-  .milestone {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    background: rgba(16,16,22,.18);
-  }
-
-  .milestone.show {
-    visibility: visible;
-    animation: milestoneFade 1.05s ease both;
-  }
-
-  .milestone-card {
-    padding: 16px 24px;
-    border: 2px solid var(--border);
-    border-radius: 18px;
-    background: rgba(31,31,40,.96);
-    box-shadow: 0 12px 36px rgba(0,0,0,.42), 0 0 28px rgba(232,185,35,.2);
-    font-family: 'DM Mono', monospace;
-    font-size: clamp(22px, 7vw, 34px);
-    font-weight: 500;
-    text-align: center;
-  }
-
-  .end-screen {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: grid;
-    place-items: center;
-    padding: 18px;
-    background: rgba(12,12,17,.76);
-    backdrop-filter: blur(5px);
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity .22s ease, visibility .22s ease;
-  }
-
-  .end-screen.show { opacity: 1; visibility: visible; }
-
-  .end-card {
-    width: min(360px, 94vw);
-    padding: 24px 20px 20px;
-    border: 2px solid var(--border);
-    border-radius: 22px;
-    background: var(--surface-2);
-    text-align: center;
-    box-shadow: 0 18px 52px rgba(0,0,0,.55);
-    transform: scale(.94);
-    transition: transform .22s ease;
-  }
-
-  .end-screen.show .end-card { transform: scale(1); }
-
-  .end-stars {
-    color: var(--border);
-    font-size: clamp(21px, 7vw, 29px);
-    letter-spacing: .04em;
-    white-space: nowrap;
-    text-shadow: 0 0 15px rgba(232,185,35,.4);
-  }
-
-  .end-medal {
-    min-height: 42px;
-    margin: 10px 0 2px;
-    font-size: 34px;
-  }
-
-  .end-score {
-    margin-top: 7px;
-    font-family: 'DM Mono', monospace;
-    font-size: 25px;
-  }
-
-  .end-message {
-    min-height: 24px;
-    margin: 10px 0 16px;
-    color: var(--text);
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  .end-record { color: var(--border); }
-
-  #btn-replay {
-    border: 0;
-    border-radius: 999px;
-    background: var(--text);
-    color: var(--bg);
-    padding: 12px 34px;
-    font: 700 14px 'Inter', sans-serif;
-    cursor: pointer;
-  }
-
-  @keyframes milestoneFade {
-    0% { opacity: 0; transform: scale(.78); }
-    18%, 72% { opacity: 1; transform: scale(1); }
-    100% { opacity: 0; transform: scale(1.08); }
-  }
 
   @media (max-width: 430px) {
     body { gap: 11px; padding-inline: 10px; }
@@ -446,9 +342,6 @@
   <button id="btn-start" type="button">Commencer</button>
 </div>
 
-<div class="milestone" id="milestone" aria-live="assertive">
-  <div class="milestone-card" id="milestone-text">🎉 Niveau 10 !</div>
-</div>
 
 <div class="end-screen" id="end-screen" role="dialog" aria-modal="true" aria-labelledby="end-message">
   <div class="end-card">
@@ -480,8 +373,6 @@
   const statusEl = document.getElementById('status');
   const btnStart = document.getElementById('btn-start');
   const recordsEl = document.getElementById('records');
-  const milestoneEl = document.getElementById('milestone');
-  const milestoneTextEl = document.getElementById('milestone-text');
   const endScreenEl = document.getElementById('end-screen');
   const endMedalEl = document.getElementById('end-medal');
   const endScoreEl = document.getElementById('end-score');
@@ -501,7 +392,6 @@
   let acceptingInput = false;
   let gameActive = false;
   let runId = 0;
-  let milestonePlaying = false;
   let records = loadRecords();
 
   function delay(ms) {
@@ -664,22 +554,6 @@
     return Math.max(230, 500 - sequence.length * 15);
   }
 
-  async function showMilestone(value, expectedRunId) {
-    if (value === 0 || value % 10 !== 0 || milestonePlaying) return;
-    milestonePlaying = true;
-    disableTiles(true);
-    milestoneTextEl.textContent = value >= 20 ? `🔥 Niveau ${value} !` : `🎉 Niveau ${value} !`;
-    milestoneEl.classList.remove('show');
-    void milestoneEl.offsetWidth;
-    milestoneEl.classList.add('show');
-    playVictory();
-    await delay(1080);
-    milestoneEl.classList.remove('show');
-    milestonePlaying = false;
-    // La remise en service des touches est gérée par handleTileClick :
-    // elle dépend du fait que le palier tombe au milieu ou à la fin de la manche.
-  }
-
   async function animateEndTiles(expectedRunId) {
     disableTiles(true);
     for (let index = 0; index < tiles.length; index++) {
@@ -793,16 +667,6 @@
 
     playerIndex += 1;
     setScore(score + 1);
-
-    if (score > 0 && score % 10 === 0) {
-      await showMilestone(score, currentRunId);
-      if (currentRunId !== runId) return;
-
-      // Si le palier arrive au milieu d'une séquence (par exemple 20 en mode
-      // 6 touches), il faut réellement réactiver les boutons, pas seulement
-      // la variable acceptingInput.
-      if (playerIndex < sequence.length) disableTiles(false);
-    }
 
     if (playerIndex === sequence.length) {
       setStatus('Bien joué !');
